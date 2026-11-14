@@ -1,6 +1,7 @@
 ---
 name: coder
 description: Implements the Kotlin, Jetpack Compose, Room, and Google Drive features following the Architect's plan.
+mode: subagent
 model: deepseek-v4.1-flash
 ---
 

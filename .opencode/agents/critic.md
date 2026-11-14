@@ -1,6 +1,7 @@
 ---
 name: critic
 description: Reviews the implementation for correctness, edge cases, simplicity, and Android best practices.
+mode: subagent
 model: deepseek-v4.1-flash
 ---
 
