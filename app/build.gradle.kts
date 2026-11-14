@@ -1,4 +1,6 @@
 import java.io.FileInputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Properties
 
 plugins {
@@ -17,15 +19,10 @@ val keystoreProperties = Properties().apply {
     }
 }
 
-// Auto-version: every commit bumps the build number. Falls back to 1 outside git.
-val gitCommitCount: Int = runCatching {
-    providers.exec {
-        commandLine("git", "rev-list", "--count", "HEAD")
-        workingDir(rootProject.projectDir)
-    }.standardOutput.asText.get().trim().toInt()
-}.getOrNull() ?: 1
-
-val appVersionName = "1.0.$gitCommitCount"
+// Build-time version: versionName vYYYYMMDD-HHMM; APK discgolfcard-YYYYMMDD-HHMM.apk.
+val buildStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
+val appVersionName = "v$buildStamp"
+val appVersionCode = (System.currentTimeMillis() / 60_000L).toInt()
 
 android {
     namespace = "com.discgolf.card"
@@ -35,7 +32,7 @@ android {
         applicationId = "net.theboyers.discgolfcard"
         minSdk = 26
         targetSdk = 35
-        versionCode = gitCommitCount
+        versionCode = appVersionCode
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
@@ -95,7 +92,7 @@ androidComponents {
         variant.outputs.forEach { output ->
             (output as? com.android.build.api.variant.impl.VariantOutputImpl)
                 ?.outputFileName
-                ?.set("discgolfcard-$appVersionName.apk")
+                ?.set("discgolfcard-$buildStamp.apk")
         }
     }
 }
