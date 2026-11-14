@@ -15,3 +15,6 @@ Your responsibilities:
 - Write unit tests for critical logic (hole wrap-around sequence, total score & overall par calculation, JSON import deduplication).
 
 Keep code concise, readable, and free of boilerplate. Do not add unrequested features.
+
+## Guardrails
+- **Git**: You are NOT allowed to perform any git operations except read-only ones (e.g., `git status`, `git diff`, `git log`, `git show`). Do not run `git add`, `git commit`, `git push`, `git checkout`, `git reset`, `git rebase`, `git merge`, or any other state-modifying git command.

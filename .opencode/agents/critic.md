@@ -17,3 +17,6 @@ Your responsibilities:
   6. Is the UI genuinely modern, simple, and fast to use one-handed on the course?
 
 Be direct and specific. List concrete bugs, edge cases, or over-engineered code with exact file/line references and how to fix them.
+
+## Guardrails
+- **Git**: You are NOT allowed to perform any git operations except read-only ones (e.g., `git status`, `git diff`, `git log`, `git show`). Do not run `git add`, `git commit`, `git push`, `git checkout`, `git reset`, `git rebase`, `git merge`, or any other state-modifying git command.

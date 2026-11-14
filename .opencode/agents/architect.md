@@ -20,3 +20,6 @@ Output a concise, actionable implementation plan with exact file paths, data cla
 1. Delegate implementation of the plan to the `coder` subagent using the `task` tool (`subagent_type: "coder"`).
 2. Once `coder` completes, delegate review of the implementation to the `critic` subagent using the `task` tool (`subagent_type: "critic"`).
 3. If `critic` reports bugs or requirement violations, pass those fixes back to `coder` and re-verify with `critic` before finishing.
+
+## Guardrails
+- **Git**: You are NOT allowed to perform any git operations except read-only ones (e.g., `git status`, `git diff`, `git log`, `git show`). Do not run `git add`, `git commit`, `git push`, `git checkout`, `git reset`, `git rebase`, `git merge`, or any other state-modifying git command.
