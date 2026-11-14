@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Disc Golf Card</string>
+
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry">Retry</string>
+    <string name="delete">Delete</string>
+
+    <string name="setup_title">New round</string>
+    <string name="course">Course</string>
+    <string name="course_placeholder">e.g. Birch Park</string>
+    <string name="course_required">Enter a course name</string>
+    <string name="layout">Layout (optional)</string>
+    <string name="layout_placeholder">e.g. Blue</string>
+    <string name="holes">Holes</string>
+    <string name="starting_hole">Starting hole</string>
+    <string name="holes_range_error">Enter a number from 1 to 36</string>
+    <string name="starting_hole_range_error">Enter a number from 1 to %1$d</string>
+    <string name="overall_par">Overall par (optional)</string>
+    <string name="par_range_error">Enter a par from 1 to 999</string>
+    <string name="players">Players</string>
+    <string name="player_n">Player %1$d</string>
+    <string name="player_name_error">Enter a name or remove this player</string>
+    <string name="remove_player">Remove player %1$d</string>
+    <string name="add_player">Add player</string>
+    <string name="start_round">Start round</string>
+    <string name="history">History</string>
+
+    <string name="resume_title">Unfinished round</string>
+    <string name="resume_body">%1$s · %2$s</string>
+    <string name="resume">Resume</string>
+    <string name="discard">Discard</string>
+    <string name="discard_round_title">Discard round?</string>
+    <string name="discard_round_message">This removes the unfinished round at %1$s.</string>
+    <string name="draft_warning_title">Unfinished round</string>
+    <string name="draft_warning_message">A round at %1$s is still in progress. Discard it and start a new round?</string>
+    <string name="draft_warning_confirm">Discard &amp; start</string>
+
+    <string name="hole_number">Hole %1$d</string>
+    <string name="card_hole_progress">%1$d of %2$d</string>
+    <string name="total_label">Total %1$d</string>
+    <string name="decrease_score">Decrease score for %1$s</string>
+    <string name="increase_score">Increase score for %1$s</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="finish_round">Finish round</string>
+    <string name="round_not_found">Round not found</string>
+    <string name="round_not_found_message">This round is no longer on this device.</string>
+
+    <string name="summary_title">Summary</string>
+    <string name="round_title">Round</string>
+    <string name="saved_to_history">Saved to history</string>
+    <string name="done">Done</string>
+    <string name="view_history">View history</string>
+    <string name="winner">Winner</string>
+    <string name="started_hole">Started hole %1$d</string>
+    <string name="par_label">Par %1$d</string>
+    <plurals name="holes_meta">
+        <item quantity="one">%1$d hole</item>
+        <item quantity="other">%1$d holes</item>
+    </plurals>
+    <string name="hole_by_hole">Hole by hole</string>
+    <string name="hole_table_hole">Hole</string>
+    <string name="share_round">Share round</string>
+
+    <string name="history_title">History</string>
+    <string name="history_empty_title">No rounds yet</string>
+    <string name="history_empty_message">Finish a round and it will show up here.</string>
+    <string name="start_a_round">Start a round</string>
+    <string name="history_won_by">Won by %1$s</string>
+    <string name="history_tied">Tied: %1$s</string>
+    <plurals name="history_score">
+        <item quantity="one">%1$d stroke</item>
+        <item quantity="other">%1$d strokes</item>
+    </plurals>
+    <plurals name="history_score_par">
+        <item quantity="one">%1$d stroke (%2$s)</item>
+        <item quantity="other">%1$d strokes (%2$s)</item>
+    </plurals>
+    <string name="delete_round_title">Delete round?</string>
+    <string name="delete_round_message">This permanently removes the round at %1$s from your history.</string>
+    <string name="delete_round_description">Delete round at %1$s</string>
+    <string name="round_deleted">Round deleted</string>
+    <string name="more_actions">More actions</string>
+    <string name="export_to_drive">Export to Drive</string>
+    <string name="import_from_drive">Import from Drive</string>
+    <plurals name="exported_rounds">
+        <item quantity="one">Exported %1$d round</item>
+        <item quantity="other">Exported %1$d rounds</item>
+    </plurals>
+    <string name="export_empty">No rounds to export</string>
+    <string name="export_failed">Could not export that file</string>
+    <string name="import_failed">Could not import that file</string>
+    <plurals name="imported_rounds">
+        <item quantity="one">Imported %1$d · %2$d already saved</item>
+        <item quantity="other">Imported %1$d · %2$d already saved</item>
+    </plurals>
+    <plurals name="skipped_invalid">
+        <item quantity="one">%1$d invalid round skipped</item>
+        <item quantity="other">%1$d invalid rounds skipped</item>
+    </plurals>
+</resources>
