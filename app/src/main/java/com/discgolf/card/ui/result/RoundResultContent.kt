@@ -2,13 +2,18 @@ package com.discgolf.card.ui.result
 
 import android.content.Intent
 import android.content.res.Configuration
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -23,15 +28,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.discgolf.card.R
 import com.discgolf.card.data.RoundEntity
@@ -40,8 +53,10 @@ import com.discgolf.card.ui.theme.AppCard
 import com.discgolf.card.ui.theme.DeltaText
 import com.discgolf.card.ui.theme.DiscGolfCardTheme
 import com.discgolf.card.ui.theme.ScoreTableTextStyle
+import com.discgolf.card.ui.theme.ScoreTotalSmallTextStyle
 import com.discgolf.card.ui.theme.ScoreTotalTextStyle
 import com.discgolf.card.ui.theme.Space
+import kotlin.math.roundToInt
 
 @Composable
 fun ShareRoundAction(shareText: String) {
@@ -177,49 +192,260 @@ fun RoundResultContent(
         }
 
         if (showHoleTable) {
-            AppCard {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = Space.sm)
-                ) {
-                    Text(
-                        text = stringResource(R.string.hole_by_hole),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm)
-                    )
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = Space.lg)
-                    ) {
-                        Column {
-                            Row {
-                                TableCell(stringResource(R.string.hole_table_hole), 56.dp, header = true)
-                                state.columns.forEach { name ->
-                                    TableCell(name, 72.dp, header = true)
-                                }
-                            }
-                            HorizontalDivider(
-                                thickness = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
-                            state.holes.forEach { hole ->
-                                Row {
-                                    TableCell(hole.hole.toString(), 56.dp)
-                                    hole.strokes.forEach { strokes ->
-                                        TableCell(strokes.toString(), 72.dp)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(Space.sm))
-                }
-            }
+            ScorecardCard(state = state, startingHole = round.startingHole)
         }
 
         footer?.invoke()
+    }
+}
+
+private val ScorecardNameWidth = 104.dp
+private val ScorecardCellWidth = 44.dp
+private val ScorecardTotalWidth = 76.dp
+
+@Composable
+private fun ScorecardCard(state: ResultUiState, startingHole: Int) {
+    val scrollState = rememberScrollState()
+    val holeNumbers = state.holes.map { it.hole }
+    val totals = state.columns.indices.map { playerIndex ->
+        state.holes.sumOf { it.strokes.getOrElse(playerIndex) { 0 } }
+    }
+
+    AppCard {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = Space.lg,
+                        end = Space.lg,
+                        top = Space.md,
+                        bottom = Space.sm
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.scorecard),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                if (startingHole != 1) {
+                    Text(
+                        text = stringResource(R.string.scorecard_in_play_order),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            ScorecardHeader(holeNumbers = holeNumbers, scrollState = scrollState)
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
+            state.columns.forEachIndexed { playerIndex, name ->
+                ScorecardPlayerRow(
+                    name = name,
+                    values = state.holes.map { it.strokes.getOrElse(playerIndex) { 0 } },
+                    total = totals[playerIndex],
+                    scrollState = scrollState
+                )
+                if (playerIndex != state.columns.lastIndex) {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+            }
+
+            if (scrollState.maxValue > 0) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Space.sm, bottom = Space.sm),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(ScorecardNameWidth))
+                    ScorecardScrollbar(
+                        scrollState = scrollState,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(ScorecardTotalWidth))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScorecardScrollbar(scrollState: ScrollState, modifier: Modifier = Modifier) {
+    var trackWidthPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val barHeight = 4.dp
+
+    Box(
+        modifier = modifier
+            .height(barHeight)
+            .onSizeChanged { trackWidthPx = it.width }
+            .clip(MaterialTheme.shapes.extraSmall)
+            .background(MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        if (trackWidthPx > 0 && scrollState.maxValue > 0) {
+            val contentWidthPx = trackWidthPx + scrollState.maxValue
+            val thumbWidthPx = (trackWidthPx.toFloat() * trackWidthPx / contentWidthPx)
+                .coerceAtLeast(with(density) { 24.dp.toPx() })
+            val maxOffsetPx = (trackWidthPx - thumbWidthPx).coerceAtLeast(0f)
+            val fraction = scrollState.value.toFloat() / scrollState.maxValue
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset((maxOffsetPx * fraction).roundToInt(), 0) }
+                    .width(with(density) { thumbWidthPx.toDp() })
+                    .fillMaxHeight()
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScorecardHeader(holeNumbers: List<Int>, scrollState: ScrollState) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ScorecardLabel(
+            text = stringResource(R.string.scorecard_player),
+            width = ScorecardNameWidth,
+            startPadding = Space.lg,
+            endPadding = Space.sm,
+            contentAlignment = Alignment.CenterStart
+        )
+        Box(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                holeNumbers.forEach { hole ->
+                    Box(
+                        modifier = Modifier
+                            .width(ScorecardCellWidth)
+                            .padding(vertical = Space.sm),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = hole.toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+        ScorecardLabel(
+            text = stringResource(R.string.scorecard_total),
+            width = ScorecardTotalWidth,
+            endPadding = Space.lg,
+            contentAlignment = Alignment.CenterEnd
+        )
+    }
+}
+
+@Composable
+private fun ScorecardPlayerRow(
+    name: String,
+    values: List<Int>,
+    total: Int,
+    scrollState: ScrollState
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .width(ScorecardNameWidth)
+                .padding(
+                    start = Space.lg,
+                    end = Space.sm,
+                    top = Space.md,
+                    bottom = Space.md
+                ),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Box(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier.horizontalScroll(scrollState)) {
+                values.forEach { value ->
+                    Box(
+                        modifier = Modifier
+                            .width(ScorecardCellWidth)
+                            .padding(vertical = Space.md),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = value.toString(),
+                            style = ScoreTableTextStyle,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .width(ScorecardTotalWidth)
+                .padding(
+                    end = Space.lg,
+                    top = Space.md,
+                    bottom = Space.md
+                ),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            Text(
+                text = total.toString(),
+                style = ScoreTotalSmallTextStyle,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScorecardLabel(
+    text: String,
+    width: Dp,
+    contentAlignment: Alignment,
+    startPadding: Dp = 0.dp,
+    endPadding: Dp = 0.dp
+) {
+    Box(
+        modifier = Modifier
+            .width(width)
+            .padding(
+                start = startPadding,
+                end = endPadding,
+                top = Space.sm,
+                bottom = Space.sm
+            ),
+        contentAlignment = contentAlignment
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -240,23 +466,15 @@ private fun WinnerBadge() {
     }
 }
 
-@Composable
-private fun TableCell(text: String, width: Dp, header: Boolean = false) {
-    Text(
-        text = text,
-        style = if (header) MaterialTheme.typography.labelSmall else ScoreTableTextStyle,
-        color = if (header) {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        },
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .width(width)
-            .padding(vertical = Space.sm)
-    )
+private fun previewHoles(): List<ResultHoleRow> {
+    val alex = mapOf(15 to 2, 17 to 2)
+    val sam = mapOf(14 to 4, 16 to 4, 18 to 4)
+    return ((14..18) + (1..13)).map { hole ->
+        ResultHoleRow(
+            hole = hole,
+            strokes = listOf(alex[hole] ?: 3, sam[hole] ?: 3)
+        )
+    }
 }
 
 private val previewState = ResultUiState(
@@ -276,13 +494,7 @@ private val previewState = ResultUiState(
         ResultPlayerRow("Sam", 57, 2, 3)
     ),
     columns = listOf("Alex", "Sam"),
-    holes = listOf(
-        ResultHoleRow(14, listOf(3, 3)),
-        ResultHoleRow(15, listOf(2, 4)),
-        ResultHoleRow(16, listOf(3, 3)),
-        ResultHoleRow(17, listOf(4, 3)),
-        ResultHoleRow(18, listOf(3, 3))
-    ),
+    holes = previewHoles(),
     shareText = "preview"
 )
 
@@ -298,6 +510,6 @@ private fun ResultPreview() {
 @Composable
 private fun ResultDarkPreview() {
     DiscGolfCardTheme(darkTheme = true) {
-        RoundResultContent(state = previewState, showHoleTable = false)
+        RoundResultContent(state = previewState, showHoleTable = true)
     }
 }

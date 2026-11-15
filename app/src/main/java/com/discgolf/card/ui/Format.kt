@@ -1,5 +1,8 @@
 package com.discgolf.card.ui
 
+import android.content.res.Resources
+import com.discgolf.card.R
+import com.discgolf.card.data.ImportResult
 import com.discgolf.card.data.RoundEntity
 import com.discgolf.card.data.Standing
 import java.time.Instant
@@ -37,4 +40,39 @@ fun shareText(round: RoundEntity, standings: List<Standing>): String = buildStri
         append('\n')
     }
     append("Scored with Disc Golf Card")
+}
+
+/** Formats a user-facing summary for a completed backup import. */
+fun importResultMessage(resources: Resources, result: ImportResult): String {
+    if (result.imported == 0 && result.skippedDuplicate == 0) {
+        return if (result.skippedInvalid > 0) {
+            resources.getQuantityString(
+                R.plurals.skipped_invalid,
+                result.skippedInvalid,
+                result.skippedInvalid
+            )
+        } else {
+            resources.getString(R.string.import_failed)
+        }
+    }
+    return buildString {
+        append(
+            resources.getQuantityString(
+                R.plurals.imported_rounds,
+                result.skippedDuplicate,
+                result.imported,
+                result.skippedDuplicate
+            )
+        )
+        if (result.skippedInvalid > 0) {
+            append(" · ")
+            append(
+                resources.getQuantityString(
+                    R.plurals.skipped_invalid,
+                    result.skippedInvalid,
+                    result.skippedInvalid
+                )
+            )
+        }
+    }
 }

@@ -69,6 +69,14 @@ val ScoreTotalTextStyle = TextStyle(
     fontFeatureSettings = "tnum"
 )
 
+val ScoreTotalSmallTextStyle = TextStyle(
+    fontFamily = FontFamily.SansSerif,
+    fontWeight = FontWeight.SemiBold,
+    fontSize = 16.sp,
+    lineHeight = 22.sp,
+    fontFeatureSettings = "tnum"
+)
+
 val ScoreTableTextStyle = TextStyle(
     fontFamily = FontFamily.SansSerif,
     fontWeight = FontWeight.Medium,

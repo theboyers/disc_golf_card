@@ -4,19 +4,24 @@ import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class FileTransfer(context: Context, private val repository: RoundRepository) {
 
-    private val resolver = context.applicationContext.contentResolver
+    private val appContext = context.applicationContext
+    private val resolver = appContext.contentResolver
 
-    suspend fun export(uri: Uri): Result<Int> = withContext(Dispatchers.IO) {
+    data class ShareFile(val file: File, val roundCount: Int)
+
+    /** Writes the same JSON backup to cache for an ACTION_SEND share (no document picker). */
+    suspend fun prepareShareFile(fileName: String): Result<ShareFile> = withContext(Dispatchers.IO) {
         runCatching {
             val rounds = repository.exportAll()
-            val payload = BackupJson.encode(rounds)
-            val stream = resolver.openOutputStream(uri, "wt")
-                ?: error("Could not open the selected file for writing")
-            stream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
-            rounds.size
+            val directory = File(appContext.cacheDir, "share").apply { mkdirs() }
+            directory.listFiles()?.forEach { it.delete() }
+            val file = File(directory, fileName)
+            file.writeText(BackupJson.encode(rounds), Charsets.UTF_8)
+            ShareFile(file, rounds.size)
         }
     }
 

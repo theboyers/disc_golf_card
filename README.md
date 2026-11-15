@@ -34,8 +34,8 @@ Requires Android 8.0 or newer.
 ## Your Data
 
 - Rounds are stored on your phone. There is no account and no cloud requirement.
-- **Export** your history from History → ⋮ → **Export to Drive**. Choose Google Drive or any folder in the system file picker.
-- **Import** that file on the same or a new phone. Rounds already on the phone are skipped, so importing twice will not create duplicates.
+- **Export** your history from History → ⋮ → **Export to Drive**. This opens the Android share sheet; choose Drive or another app such as Files or email.
+- **Import** your history from History → ⋮ → **Import backup** to pick an exported JSON backup file directly from your device or Drive. You can also open or share a backup file to Disc Golf Card from another app (such as **Open with** in Files or **Send a copy** in Google Drive). Rounds already on the phone are skipped, so importing twice will not create duplicates.
 - If Android backup is enabled and you sign in with the same account, the app's data can transfer automatically when you set up a new device.
 - Deleting a round from History removes it permanently.
 

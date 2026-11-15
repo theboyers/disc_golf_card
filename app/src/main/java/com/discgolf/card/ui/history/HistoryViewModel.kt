@@ -6,9 +6,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.discgolf.card.data.FileTransfer
+import com.discgolf.card.data.ImportResult
 import com.discgolf.card.data.RoundRepository
 import com.discgolf.card.data.RoundWithPlayers
 import com.discgolf.card.data.standings
+import com.discgolf.card.ui.backupFileName
 import com.discgolf.card.ui.formatDate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
 
 data class HistoryRow(
     val id: String,
@@ -36,10 +39,9 @@ data class HistoryUiState(
 )
 
 sealed interface HistoryMessage {
-    data class Exported(val count: Int) : HistoryMessage
     data object ExportEmpty : HistoryMessage
-    data object ExportFailed : HistoryMessage
-    data class Imported(val imported: Int, val duplicates: Int, val invalid: Int) : HistoryMessage
+    data object ShareFailed : HistoryMessage
+    data class ImportCompleted(val result: ImportResult) : HistoryMessage
     data object ImportFailed : HistoryMessage
     data object Deleted : HistoryMessage
 }
@@ -52,6 +54,8 @@ class HistoryViewModel(
     private val transferring = MutableStateFlow(false)
     private val _messages = Channel<HistoryMessage>(Channel.BUFFERED)
     val messages = _messages.receiveAsFlow()
+    private val _shareFiles = Channel<File>(Channel.BUFFERED)
+    val shareFiles = _shareFiles.receiveAsFlow()
 
     val state: StateFlow<HistoryUiState> = combine(
         repository.observeHistory(),
@@ -71,33 +75,35 @@ class HistoryViewModel(
         }
     }
 
-    fun export(uri: Uri) {
+    fun shareBackup() {
         viewModelScope.launch {
             transferring.value = true
-            val result = fileTransfer.export(uri)
+            val result = runCatching { fileTransfer.prepareShareFile(backupFileName()) }
+                .getOrElse { Result.failure(it) }
             transferring.value = false
-            val count = result.getOrNull()
-            val message = when {
-                result.isFailure -> HistoryMessage.ExportFailed
-                count == null || count == 0 -> HistoryMessage.ExportEmpty
-                else -> HistoryMessage.Exported(count)
+            result.onSuccess { share ->
+                if (share.roundCount == 0) {
+                    _messages.trySend(HistoryMessage.ExportEmpty)
+                } else {
+                    _shareFiles.trySend(share.file)
+                }
+            }.onFailure {
+                _messages.trySend(HistoryMessage.ShareFailed)
             }
-            _messages.trySend(message)
         }
     }
 
-    fun import(uri: Uri) {
+    /** Imports rounds from a user-selected backup document URI. */
+    fun importBackup(uri: Uri) {
         viewModelScope.launch {
             transferring.value = true
             val result = fileTransfer.import(uri)
             transferring.value = false
-            val message = result.fold(
-                onSuccess = {
-                    HistoryMessage.Imported(it.imported, it.skippedDuplicate, it.skippedInvalid)
-                },
-                onFailure = { HistoryMessage.ImportFailed }
-            )
-            _messages.trySend(message)
+            result.onSuccess {
+                _messages.trySend(HistoryMessage.ImportCompleted(it))
+            }.onFailure {
+                _messages.trySend(HistoryMessage.ImportFailed)
+            }
         }
     }
 

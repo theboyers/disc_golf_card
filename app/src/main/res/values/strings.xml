@@ -60,8 +60,10 @@
         <item quantity="one">%1$d hole</item>
         <item quantity="other">%1$d holes</item>
     </plurals>
-    <string name="hole_by_hole">Hole by hole</string>
-    <string name="hole_table_hole">Hole</string>
+    <string name="scorecard">Scorecard</string>
+    <string name="scorecard_player">Player</string>
+    <string name="scorecard_total">Total</string>
+    <string name="scorecard_in_play_order">In play order</string>
     <string name="share_round">Share round</string>
 
     <string name="history_title">History</string>
@@ -84,13 +86,11 @@
     <string name="round_deleted">Round deleted</string>
     <string name="more_actions">More actions</string>
     <string name="export_to_drive">Export to Drive</string>
-    <string name="import_from_drive">Import from Drive</string>
-    <plurals name="exported_rounds">
-        <item quantity="one">Exported %1$d round</item>
-        <item quantity="other">Exported %1$d rounds</item>
-    </plurals>
+    <string name="share_backup">Share backup</string>
+    <string name="share_backup_failed">Could not prepare the backup file</string>
+    <string name="import_title">Import backup</string>
+    <string name="ok">OK</string>
     <string name="export_empty">No rounds to export</string>
-    <string name="export_failed">Could not export that file</string>
     <string name="import_failed">Could not import that file</string>
     <plurals name="imported_rounds">
         <item quantity="one">Imported %1$d · %2$d already saved</item>

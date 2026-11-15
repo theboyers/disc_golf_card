@@ -1,6 +1,8 @@
 package com.discgolf.card.ui.history
 
+import android.content.ClipData
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,12 +48,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.discgolf.card.DiscGolfApp
 import com.discgolf.card.R
-import com.discgolf.card.ui.backupFileName
 import com.discgolf.card.ui.formatDelta
+import com.discgolf.card.ui.importResultMessage
 import com.discgolf.card.ui.theme.AppCard
 import com.discgolf.card.ui.theme.AppTopBar
 import com.discgolf.card.ui.theme.ConfirmDialog
@@ -72,21 +77,44 @@ fun HistoryScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri -> uri?.let(viewModel::export) }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let(viewModel::import) }
-
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { message ->
             snackbarHostState.showSnackbar(messageText(context, message))
         }
     }
 
+    LaunchedEffect(viewModel) {
+        viewModel.shareFiles.collect { file ->
+            val launched = runCatching {
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/json"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    clipData = ClipData.newRawUri("backup", uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(
+                    Intent.createChooser(send, context.getString(R.string.share_backup))
+                )
+            }.isSuccess
+            if (!launched) {
+                snackbarHostState.showSnackbar(context.getString(R.string.share_backup_failed))
+            }
+        }
+    }
+
     var pendingDelete by remember { mutableStateOf<HistoryRow?>(null) }
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.importBackup(uri)
+        }
+    }
 
     HistoryContent(
         state = state,
@@ -95,12 +123,8 @@ fun HistoryScreen(
         onRoundClick = onRoundClick,
         onStartRound = onStartRound,
         onDeleteClick = { pendingDelete = it },
-        onExportClick = { exportLauncher.launch(backupFileName()) },
-        onImportClick = {
-            importLauncher.launch(
-                arrayOf("application/json", "text/plain", "application/octet-stream")
-            )
-        }
+        onExportToDrive = viewModel::shareBackup,
+        onImportClick = { importLauncher.launch(arrayOf("*/*")) }
     )
 
     pendingDelete?.let { row ->
@@ -126,7 +150,7 @@ private fun HistoryContent(
     onRoundClick: (String) -> Unit,
     onStartRound: () -> Unit,
     onDeleteClick: (HistoryRow) -> Unit,
-    onExportClick: () -> Unit,
+    onExportToDrive: () -> Unit,
     onImportClick: () -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -154,11 +178,11 @@ private fun HistoryContent(
                                 enabled = !state.isTransferring,
                                 onClick = {
                                     menuOpen = false
-                                    onExportClick()
+                                    onExportToDrive()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.import_from_drive)) },
+                                text = { Text(stringResource(R.string.import_title)) },
                                 enabled = !state.isTransferring,
                                 onClick = {
                                     menuOpen = false
@@ -295,35 +319,9 @@ private fun HistoryRowCard(
 }
 
 private fun messageText(context: Context, message: HistoryMessage): String = when (message) {
-    is HistoryMessage.Exported -> context.resources.getQuantityString(
-        R.plurals.exported_rounds,
-        message.count,
-        message.count
-    )
-
     HistoryMessage.ExportEmpty -> context.getString(R.string.export_empty)
-    HistoryMessage.ExportFailed -> context.getString(R.string.export_failed)
-    is HistoryMessage.Imported -> buildString {
-        append(
-            context.resources.getQuantityString(
-                R.plurals.imported_rounds,
-                message.duplicates,
-                message.imported,
-                message.duplicates
-            )
-        )
-        if (message.invalid > 0) {
-            append(" · ")
-            append(
-                context.resources.getQuantityString(
-                    R.plurals.skipped_invalid,
-                    message.invalid,
-                    message.invalid
-                )
-            )
-        }
-    }
-
+    HistoryMessage.ShareFailed -> context.getString(R.string.share_backup_failed)
+    is HistoryMessage.ImportCompleted -> importResultMessage(context.resources, message.result)
     HistoryMessage.ImportFailed -> context.getString(R.string.import_failed)
     HistoryMessage.Deleted -> context.getString(R.string.round_deleted)
 }
@@ -345,7 +343,7 @@ private fun HistoryPreview() {
             onRoundClick = {},
             onStartRound = {},
             onDeleteClick = {},
-            onExportClick = {},
+            onExportToDrive = {},
             onImportClick = {}
         )
     }
@@ -362,7 +360,7 @@ private fun HistoryDarkPreview() {
             onRoundClick = {},
             onStartRound = {},
             onDeleteClick = {},
-            onExportClick = {},
+            onExportToDrive = {},
             onImportClick = {}
         )
     }
